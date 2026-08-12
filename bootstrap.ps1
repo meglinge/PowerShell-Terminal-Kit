@@ -11,13 +11,30 @@ $reference = if ($env:PSTK_REF) { $env:PSTK_REF } else { 'main' }
 $archiveUrl = "https://codeload.github.com/$repository/zip/refs/heads/$reference"
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ('PowerShellTerminalKit-' + [guid]::NewGuid().ToString('N'))
 
+function Invoke-BootstrapDownload([string] $Uri, [string] $OutFile) {
+    for ($attempt = 1; $attempt -le 4; $attempt++) {
+        try {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            $webRequest = @{ Uri = $Uri; OutFile = $OutFile }
+            if ($PSVersionTable.PSVersion.Major -lt 6) { $webRequest.UseBasicParsing = $true }
+            Invoke-WebRequest @webRequest
+            if ((Get-Item -LiteralPath $OutFile).Length -eq 0) { throw 'The downloaded file is empty.' }
+            return
+        } catch {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            if ($attempt -eq 4) { throw }
+            $delay = [math]::Pow(2, $attempt)
+            Write-Warning "Download failed (attempt $attempt/4); retrying in $delay seconds."
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
 try {
     Write-Host "Downloading PowerShell Terminal Kit ($reference)…" -ForegroundColor Cyan
     New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
     $archive = Join-Path $temporaryRoot 'PowerShell-Terminal-Kit.zip'
-    $webRequest = @{ Uri = $archiveUrl; OutFile = $archive }
-    if ($PSVersionTable.PSVersion.Major -lt 6) { $webRequest.UseBasicParsing = $true }
-    Invoke-WebRequest @webRequest
+    Invoke-BootstrapDownload $archiveUrl $archive
     Expand-Archive -LiteralPath $archive -DestinationPath $temporaryRoot -Force
 
     $installer = Get-ChildItem -LiteralPath $temporaryRoot -Filter install.ps1 -File -Recurse |

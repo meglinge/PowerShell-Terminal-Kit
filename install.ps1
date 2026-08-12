@@ -65,6 +65,23 @@ function Copy-FileIfChanged([string] $Source, [string] $Destination) {
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
+function Invoke-DownloadFile([string] $Uri, [string] $OutFile) {
+    for ($attempt = 1; $attempt -le 4; $attempt++) {
+        try {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            Invoke-WebRequest -Uri $Uri -OutFile $OutFile
+            if ((Get-Item -LiteralPath $OutFile).Length -eq 0) { throw 'The downloaded file is empty.' }
+            return
+        } catch {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            if ($attempt -eq 4) { throw }
+            $delay = [math]::Pow(2, $attempt)
+            Write-Warning "Download failed (attempt $attempt/4); retrying in $delay seconds."
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
 function Install-WinGetDependencies {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         throw 'WinGet is required. Install Microsoft App Installer and run again.'
@@ -138,9 +155,20 @@ function Install-PowerShellModules {
 
 function Install-MapleMono {
     $fontRegistry = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+    $fontDirectory = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
     $installed = Get-ItemProperty $fontRegistry -ErrorAction SilentlyContinue
     if ($installed -and $installed.PSObject.Properties.Name -match '^Maple Mono NF CN Regular') {
         Write-Host '  Maple Mono NF CN is already installed.'
+        return
+    }
+    $localFonts = @(Get-ChildItem $fontDirectory -Filter 'MapleMono-NF-CN-*.ttf' -File -ErrorAction SilentlyContinue)
+    if ($localFonts.BaseName -contains 'MapleMono-NF-CN-Regular') {
+        foreach ($font in $localFonts) {
+            $style = $font.BaseName -replace '^MapleMono-NF-CN-', ''
+            New-ItemProperty $fontRegistry -Name "Maple Mono NF CN $style (TrueType)" `
+                -Value $font.FullName -PropertyType String -Force | Out-Null
+        }
+        Write-Host '  Maple Mono NF CN is already installed; repaired its registry entries.'
         return
     }
     if ($DryRun) { Write-Host '  Download MapleMono-NF-CN-unhinted.zip from the latest stable release.'; return }
@@ -152,9 +180,8 @@ function Install-MapleMono {
     try {
         New-Item -ItemType Directory -Path $temp | Out-Null
         $archive = Join-Path $temp $asset.name
-        Invoke-WebRequest $asset.browser_download_url -OutFile $archive
+        Invoke-DownloadFile $asset.browser_download_url $archive
         Expand-Archive $archive (Join-Path $temp 'font')
-        $fontDirectory = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
         New-Item -ItemType Directory -Path $fontDirectory -Force | Out-Null
         foreach ($font in Get-ChildItem (Join-Path $temp 'font') -Filter 'MapleMono-NF-CN-*.ttf' -Recurse) {
             $destination = Join-Path $fontDirectory $font.Name
