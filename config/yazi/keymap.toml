@@ -1,0 +1,29 @@
+#:schema https://yazi-rs.github.io/schemas/keymap.json
+
+# Ranger-style bindings while retaining unrelated Yazi defaults.
+[mgr]
+prepend_keymap = [
+	{ on = "h",          run = "leave",                       desc = "Parent directory" },
+	{ on = "l",          run = [ "enter", "open" ],           desc = "Enter directory or open file" },
+	{ on = "j",          run = "arrow next",                  desc = "Next file" },
+	{ on = "k",          run = "arrow prev",                  desc = "Previous file" },
+	{ on = [ "g", "g" ], run = "arrow top",                   desc = "Go to top" },
+	{ on = "G",          run = "arrow bot",                   desc = "Go to bottom" },
+	{ on = "H",          run = "back",                        desc = "History back" },
+	{ on = "L",          run = "forward",                     desc = "History forward" },
+	{ on = [ "z", "h" ], run = "hidden toggle",               desc = "Toggle hidden files" },
+	{ on = "<Space>",    run = [ "toggle", "arrow 1" ],       desc = "Toggle selection" },
+	{ on = "v",          run = "visual_mode",                 desc = "Visual selection mode" },
+	{ on = [ "y", "y" ], run = "yank",                        desc = "Copy selected files" },
+	{ on = [ "d", "d" ], run = "yank --cut",                  desc = "Cut selected files" },
+	{ on = [ "p", "p" ], run = "paste",                       desc = "Paste files" },
+	{ on = [ "c", "w" ], run = "rename --cursor=before_ext",  desc = "Rename" },
+	{ on = "a",          run = "create",                      desc = "Create file or directory" },
+	{ on = [ "d", "D" ], run = "remove",                      desc = "Move to Recycle Bin" },
+	{ on = "/",          run = "find --smart",                desc = "Find in current directory" },
+	{ on = "n",          run = "find_arrow",                  desc = "Next match" },
+	{ on = "N",          run = "find_arrow --previous",       desc = "Previous match" },
+	{ on = "r",          run = "open --interactive",          desc = "Open with" },
+	{ on = "S",          run = [ "enter", "quit" ],           desc = "Quit and cd to hovered directory" },
+	{ on = "q",          run = "quit",                        desc = "Quit" },
+]

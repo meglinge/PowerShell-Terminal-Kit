@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify
+        shell: pwsh
+        run: ./verify.ps1 -RepositoryOnly
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "PowerShell-Terminal-Kit-$env:GITHUB_REF_NAME"
+          New-Item -ItemType Directory ".artifacts/$name" | Out-Null
+          Get-ChildItem -Force | Where-Object Name -notin '.git', '.artifacts' |
+            Copy-Item -Destination ".artifacts/$name" -Recurse
+          Compress-Archive ".artifacts/$name" ".artifacts/$name.zip"
+          Get-FileHash ".artifacts/$name.zip" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $name.zip" } |
+            Set-Content ".artifacts/$name.zip.sha256" -Encoding utf8NoBOM
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $name = "PowerShell-Terminal-Kit-$env:GITHUB_REF_NAME"
+          gh release create $env:GITHUB_REF_NAME ".artifacts/$name.zip" ".artifacts/$name.zip.sha256" `
+            --verify-tag --generate-notes --title $env:GITHUB_REF_NAME

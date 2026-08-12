@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repository verification
+        shell: pwsh
+        run: ./verify.ps1 -RepositoryOnly
+      - name: Installer dry run
+        shell: pwsh
+        run: ./install.ps1 -SkipPackages -SkipFont -SkipTerminalSettings -DryRun
