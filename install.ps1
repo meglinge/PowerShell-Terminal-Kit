@@ -77,11 +77,25 @@ function Install-WinGetDependencies {
         'JesseDuffield.lazygit', 'bootandy.dust', 'jqlang.jq', 'Casey.Just'
     )
     foreach ($id in $packages) {
-        Write-Host "  WinGet $id"
-        if (-not $DryRun) {
-            & winget install --id $id --exact --silent --accept-package-agreements `
-                --accept-source-agreements --disable-interactivity
-            if ($LASTEXITCODE -ne 0) { throw "WinGet failed for $id (exit $LASTEXITCODE)." }
+        if ($DryRun) {
+            Write-Host "  WinGet $id"
+            continue
+        }
+
+        & winget list --id $id --exact --accept-source-agreements --disable-interactivity 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  WinGet $id (already installed)"
+            continue
+        }
+
+        Write-Host "  WinGet $id (installing)"
+        & winget install --id $id --exact --silent --accept-package-agreements `
+            --accept-source-agreements --disable-interactivity
+        $installExitCode = $LASTEXITCODE
+        # APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE: another process or stale
+        # package metadata can reveal an existing current version after the list check.
+        if ($installExitCode -notin 0, -1978335189) {
+            throw "WinGet failed for $id (exit $installExitCode)."
         }
     }
 }
