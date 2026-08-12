@@ -14,6 +14,7 @@ Zsh/Nushell 的视觉与交互，但不引入 Zsh、Nushell、WSL 或 Git Bash �
 - `lso` 保留原始 `FileInfo` / `DirectoryInfo` 对象管道。
 - zoxide 提供 `j` / `ji` 智能目录跳转。
 - Yazi 使用 Ranger 键位；`ya` 启动，光标停在目录上按 `Shift+S` 即退出并进入该目录。
+- Neovim 0.12 使用内置 `vim.pack`、原生 LSP 补全和精简的现代插件栈。
 - btop、lazygit、dust、jq、just、ripgrep、fd 等现代原生命令行工具。
 - 慢模块在首次提示符后预热，Carapace 在首次 Tab 时加载。
 
@@ -54,6 +55,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 4. 从 Maple Mono 官方稳定 Release 安装 Maple Mono NF CN。
 5. 安装仓库内经过校验的 `fzf-icons` 与 `Fast-TerminalIcons`。
 6. 结构化合并 Windows Terminal 设置，保留用户已有的其他 Profile 和配色。
+7. 备份并部署 Neovim 配置；首次启动按锁文件并行安装插件。
 
 安装完成后关闭**所有** Windows Terminal 窗口，重新打开，再验证：
 
@@ -75,6 +77,9 @@ Test-TerminalKit
 
 # 不修改 Windows Terminal 设置
 .\install.ps1 -SkipTerminalSettings
+
+# 保留现有 Neovim 配置
+.\install.ps1 -SkipNeovimConfig
 ```
 
 脚本可重复执行；每次执行都会创建新的时间戳备份。
@@ -130,9 +135,13 @@ PSGallery 模块与字体可能被其他配置共享，因此有意保留，不�
 | `Shift+S`（Yazi） | 进入光标所指目录、退出 Yazi、切换 PowerShell 目录 |
 | `reload-profile` | 重载 PowerShell Profile |
 | `edit-profile` | 用 VS Code 编辑 Profile |
+| `vim` / `nvim` | 启动 Neovim |
+| `edit-nvim` | 在 Neovim 中打开配置目录 |
 | `Update-TerminalKit` | 自动下载并更新到最新版 |
 | `Test-TerminalKit` | 验证已安装环境 |
 | `Uninstall-TerminalKit` | 恢复首次安装前的原始配置 |
+
+Neovim 的插件、语言支持和快捷键见 [docs/NEOVIM.md](docs/NEOVIM.md)。
 
 完整键位见 [docs/KEYS.md](docs/KEYS.md)。
 
@@ -163,6 +172,7 @@ Windows Terminal (Tokyo Night + Maple Mono NF CN)
 assets/                    已校验的原生运行时与许可证
 config/powershell/         可移植 PowerShell Profile
 config/yazi/               Ranger 风格键位
+config/nvim/               Neovim 0.12 原生 vim.pack 配置与锁文件
 config/windows-terminal…   可合并的 Terminal 设计片段
 docs/                      架构和快捷键文档
 install.ps1                幂等安装、备份和结构化合并

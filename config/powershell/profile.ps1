@@ -204,6 +204,8 @@ function ports { Get-NetTCPConnection -State Listen | Sort-Object LocalPort | Fo
 function path { $env:Path -split ';' | Where-Object { $_ } }
 function reload-profile { . $PROFILE.CurrentUserAllHosts }
 function edit-profile { code $PROFILE.CurrentUserAllHosts }
+if (Get-Command nvim -ErrorAction SilentlyContinue) { Set-Alias vim nvim }
+function edit-nvim { nvim (Join-Path $env:LOCALAPPDATA 'nvim') }
 function Update-TerminalKit {
     $bootstrap = Invoke-RestMethod 'https://raw.githubusercontent.com/meglinge/PowerShell-Terminal-Kit/main/bootstrap.ps1'
     Invoke-Expression $bootstrap

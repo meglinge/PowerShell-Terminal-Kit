@@ -3,10 +3,12 @@ param(
     [switch] $SkipPackages,
     [switch] $SkipFont,
     [switch] $SkipTerminalSettings,
+    [switch] $SkipNeovimConfig,
     [switch] $DryRun,
     [string] $StateRoot = (Join-Path $env:LOCALAPPDATA 'PowerShellTerminalKit'),
     [string] $ProfilePath = $PROFILE.CurrentUserAllHosts,
     [string] $YaziKeymap = (Join-Path $env:APPDATA 'yazi\config\keymap.toml'),
+    [string] $NeovimConfig = (Join-Path $env:LOCALAPPDATA 'nvim'),
     [string] $TerminalSettings = (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json')
 )
 
@@ -26,6 +28,9 @@ $requiredAssets = @(
     'config\powershell\profile.ps1',
     'config\windows-terminal.fragment.json',
     'config\yazi\keymap.toml',
+    'config\nvim\init.lua',
+    'config\nvim\lua\config\plugins.lua',
+    'config\nvim\nvim-pack-lock.json',
     'assets\fzf-icons\fzf.exe',
     'assets\Fast-TerminalIcons\0.3.0\Fast-TerminalIcons.dll',
     'uninstall.ps1',
@@ -88,8 +93,9 @@ function Install-WinGetDependencies {
     }
 
     $packages = @(
-        'Microsoft.WindowsTerminal', 'Microsoft.PowerShell', 'Git.Git',
+        'Microsoft.WindowsTerminal', 'Microsoft.PowerShell', 'Git.Git', 'Neovim.Neovim',
         'BurntSushi.ripgrep.MSVC', 'sharkdp.fd', 'ajeetdsouza.zoxide',
+        'tree-sitter.tree-sitter-cli',
         'sxyazi.yazi', 'rsteube.Carapace', 'aristocratos.btop4win',
         'JesseDuffield.lazygit', 'bootandy.dust', 'jqlang.jq', 'Casey.Just'
     )
@@ -241,9 +247,11 @@ function Merge-WindowsTerminalSettings {
 Write-Step 'Plan and backup'
 Write-Host "  Profile: $profilePath"
 Write-Host "  Yazi:    $yaziKeymap"
+Write-Host "  Neovim:  $neovimConfig"
 Write-Host "  Terminal:$terminalSettings"
 Backup-Target $profilePath 'profile.ps1'
 Backup-Target $yaziKeymap 'yazi\keymap.toml'
+if (-not $SkipNeovimConfig) { Backup-Target $neovimConfig 'nvim' }
 if (-not $SkipTerminalSettings) { Backup-Target $terminalSettings 'terminal\settings.json' }
 
 if (-not $SkipPackages) {
@@ -269,6 +277,11 @@ if (-not $DryRun) {
     Copy-FileIfChanged (Join-Path $repoRoot 'verify.ps1') (Join-Path $stateRoot 'verify.ps1')
     Copy-Item (Join-Path $repoRoot 'config\powershell\profile.ps1') $profilePath -Force
     Copy-Item (Join-Path $repoRoot 'config\yazi\keymap.toml') $yaziKeymap -Force
+    if (-not $SkipNeovimConfig) {
+        Remove-Item -LiteralPath $neovimConfig -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $neovimConfig -Force | Out-Null
+        Copy-Item (Join-Path $repoRoot 'config\nvim\*') $neovimConfig -Recurse -Force
+    }
     if (-not $SkipTerminalSettings) { Merge-WindowsTerminalSettings }
 
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null

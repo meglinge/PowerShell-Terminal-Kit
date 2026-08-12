@@ -38,7 +38,7 @@ Test-Check 'Windows Terminal fragment JSON' {
 }
 Test-Check 'No machine-specific paths or common token prefixes' {
     $text = Get-ChildItem $repoRoot -Recurse -File |
-        Where-Object { $_.Extension -in '.ps1', '.json', '.toml', '.md' -and $_.Name -ne 'verify.ps1' } |
+        Where-Object { $_.Extension -in '.ps1', '.json', '.toml', '.md', '.lua' -and $_.Name -ne 'verify.ps1' } |
         Get-Content -Raw | Out-String
     if ($text -match 'QiaoHao|D:\\MegAiTools|gh[opsu]_[A-Za-z0-9]') { throw 'personal path or token-like text detected' }
 }
@@ -65,16 +65,21 @@ Test-Check 'Installer deploys and merges in an isolated target' {
     try {
         $targetProfile = Join-Path $temp 'PowerShell\profile.ps1'
         $targetYazi = Join-Path $temp 'yazi\keymap.toml'
+        $targetNeovim = Join-Path $temp 'nvim'
         $targetTerminal = Join-Path $temp 'Terminal\settings.json'
         New-Item -ItemType Directory -Path (Split-Path $targetTerminal) -Force | Out-Null
+        New-Item -ItemType Directory -Path $targetNeovim -Force | Out-Null
+        'existing-neovim-config' | Set-Content (Join-Path $targetNeovim 'original.txt') -Encoding utf8NoBOM
         '{"profiles":{"defaults":{},"list":[{"guid":"{keep-me}","name":"Existing"}]},"schemes":[{"name":"Existing Scheme"}]}' |
             Set-Content $targetTerminal -Encoding utf8NoBOM
         & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
             -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
-            -YaziKeymap $targetYazi -TerminalSettings $targetTerminal | Out-Null
+            -YaziKeymap $targetYazi -NeovimConfig $targetNeovim `
+            -TerminalSettings $targetTerminal | Out-Null
         $firstBackup = Get-ChildItem (Join-Path $temp 'state\backups') -Directory | Sort-Object Name | Select-Object -First 1
         $settings = Get-Content $targetTerminal -Raw | ConvertFrom-Json
         if (-not (Test-Path $targetProfile) -or -not (Test-Path $targetYazi)) { throw 'configuration files were not deployed' }
+        if (-not (Test-Path (Join-Path $targetNeovim 'init.lua'))) { throw 'Neovim configuration was not deployed' }
         if (-not (Test-Path (Join-Path $temp 'state\bin\fzf.exe'))) { throw 'fzf-icons was not deployed' }
         if ('{keep-me}' -notin $settings.profiles.list.guid) { throw 'existing Terminal profile was lost' }
         if ('Existing Scheme' -notin $settings.schemes.name) { throw 'existing Terminal scheme was lost' }
@@ -82,12 +87,15 @@ Test-Check 'Installer deploys and merges in an isolated target' {
         Import-Module (Join-Path (Split-Path $targetProfile) 'Modules\Fast-TerminalIcons\0.3.0\Fast-TerminalIcons.dll') -Force
         & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
             -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
-            -YaziKeymap $targetYazi -TerminalSettings $targetTerminal | Out-Null
+            -YaziKeymap $targetYazi -NeovimConfig $targetNeovim `
+            -TerminalSettings $targetTerminal | Out-Null
         & (Join-Path $repoRoot 'uninstall.ps1') -StateRoot (Join-Path $temp 'state') `
             -ProfilePath $targetProfile -Backup $firstBackup.FullName | Out-Null
         $restored = Get-Content $targetTerminal -Raw | ConvertFrom-Json
         if (Test-Path $targetProfile) { throw 'new profile was not removed during rollback' }
         if (Test-Path $targetYazi) { throw 'new Yazi keymap was not removed during rollback' }
+        if (-not (Test-Path (Join-Path $targetNeovim 'original.txt'))) { throw 'original Neovim config was not restored' }
+        if (Test-Path (Join-Path $targetNeovim 'init.lua')) { throw 'installed Neovim config remained after rollback' }
         if ($restored.profiles.list.Count -ne 1 -or $restored.profiles.list[0].guid -ne '{keep-me}') {
             throw 'Terminal settings were not restored exactly enough'
         }
@@ -108,6 +116,10 @@ if (-not $RepositoryOnly) {
     }
     Test-Check 'Installed fzf is the icon build' {
         (& (Join-Path $env:LOCALAPPDATA 'PowerShellTerminalKit\bin\fzf.exe') --version) -match '-icons'
+    }
+    Test-Check 'Neovim configuration loads' {
+        $output = & nvim --headless "+lua print('terminal-kit-nvim-ok')" '+qall' 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0 -or $output -notmatch 'terminal-kit-nvim-ok') { throw $output }
     }
     Test-Check 'Yazi keymap is loaded' {
         $debug = & yazi --debug 2>&1 | Out-String
