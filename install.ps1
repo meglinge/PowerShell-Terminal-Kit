@@ -158,7 +158,12 @@ function Install-MapleMono {
         New-Item -ItemType Directory -Path $fontDirectory -Force | Out-Null
         foreach ($font in Get-ChildItem (Join-Path $temp 'font') -Filter 'MapleMono-NF-CN-*.ttf' -Recurse) {
             $destination = Join-Path $fontDirectory $font.Name
-            Copy-Item $font.FullName $destination -Force
+            # Installed fonts can remain locked by Windows Terminal for the lifetime of
+            # the process. Keep an existing file and repair its per-user registry entry
+            # instead of trying to overwrite it and aborting an otherwise safe rerun.
+            if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
+                Copy-Item $font.FullName $destination
+            }
             $style = $font.BaseName -replace '^MapleMono-NF-CN-', ''
             New-ItemProperty $fontRegistry -Name "Maple Mono NF CN $style (TrueType)" `
                 -Value $destination -PropertyType String -Force | Out-Null
