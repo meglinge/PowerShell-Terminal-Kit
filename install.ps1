@@ -76,27 +76,34 @@ function Install-WinGetDependencies {
         'sxyazi.yazi', 'rsteube.Carapace', 'aristocratos.btop4win',
         'JesseDuffield.lazygit', 'bootandy.dust', 'jqlang.jq', 'Casey.Just'
     )
-    foreach ($id in $packages) {
-        if ($DryRun) {
-            Write-Host "  WinGet $id"
-            continue
-        }
+    if ($DryRun) {
+        $packages | ForEach-Object { Write-Host "  WinGet $_" }
+        return
+    }
 
+    $results = $packages | ForEach-Object -Parallel {
+        $id = $_
         & winget list --id $id --exact --accept-source-agreements --disable-interactivity 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  WinGet $id (already installed)"
-            continue
+            return [pscustomobject]@{ Id = $id; ExitCode = 0; Output = '' }
         }
 
         Write-Host "  WinGet $id (installing)"
-        & winget install --id $id --exact --silent --accept-package-agreements `
-            --accept-source-agreements --disable-interactivity
-        $installExitCode = $LASTEXITCODE
-        # APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE: another process or stale
-        # package metadata can reveal an existing current version after the list check.
-        if ($installExitCode -notin 0, -1978335189) {
-            throw "WinGet failed for $id (exit $installExitCode)."
+        $output = & winget install --id $id --exact --silent --accept-package-agreements `
+            --accept-source-agreements --disable-interactivity 2>&1 | Out-String
+        [pscustomobject]@{ Id = $id; ExitCode = $LASTEXITCODE; Output = $output }
+    } -ThrottleLimit 4
+
+    # APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE: another process or stale
+    # package metadata can reveal an existing current version after the list check.
+    $failures = @($results | Where-Object ExitCode -notin 0, -1978335189)
+    if ($failures.Count) {
+        foreach ($failure in $failures) {
+            if ($failure.Output) { Write-Host $failure.Output.TrimEnd() -ForegroundColor DarkGray }
+            Write-Host "  WinGet $($failure.Id) failed (exit $($failure.ExitCode))." -ForegroundColor Red
         }
+        throw "WinGet failed for: $($failures.Id -join ', ')."
     }
 }
 

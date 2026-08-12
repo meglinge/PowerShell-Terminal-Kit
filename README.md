@@ -49,7 +49,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 安装器会：
 
 1. 自动备份已有 PowerShell Profile、Yazi 键位和 Windows Terminal 设置。
-2. 通过 WinGet 安装 PowerShell、Windows Terminal 和全部原生工具。
+2. 通过 WinGet 最多并行安装 4 个任务，部署 PowerShell、Windows Terminal 和全部原生工具。
 3. 从 PSGallery 安装 PSReadLine、PSFzf 和 CompletionPredictor。
 4. 从 Maple Mono 官方稳定 Release 安装 Maple Mono NF CN。
 5. 安装仓库内经过校验的 `fzf-icons` 与 `Fast-TerminalIcons`。
