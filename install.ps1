@@ -17,7 +17,7 @@ if (-not $IsWindows) { throw 'PowerShell Terminal Kit supports Windows only.' }
 if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'Run this installer with PowerShell 7: pwsh -File .\install.ps1' }
 
 $repoRoot = $PSScriptRoot
-$backupRoot = Join-Path $stateRoot ('backups\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$backupRoot = Join-Path $stateRoot ('backups\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 $profileDirectory = Split-Path $profilePath
 $moduleDestination = Join-Path $profileDirectory 'Modules\Fast-TerminalIcons\0.3.0'
 $manifestEntries = [Collections.Generic.List[object]]::new()
@@ -27,7 +27,9 @@ $requiredAssets = @(
     'config\windows-terminal.fragment.json',
     'config\yazi\keymap.toml',
     'assets\fzf-icons\fzf.exe',
-    'assets\Fast-TerminalIcons\0.3.0\Fast-TerminalIcons.dll'
+    'assets\Fast-TerminalIcons\0.3.0\Fast-TerminalIcons.dll',
+    'uninstall.ps1',
+    'verify.ps1'
 )
 foreach ($relative in $requiredAssets) {
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $relative) -PathType Leaf)) {
@@ -52,6 +54,15 @@ function Backup-Target([string] $Path, [string] $Name) {
 function Set-ObjectProperty([object] $Object, [string] $Name, [object] $Value) {
     if ($Object.PSObject.Properties[$Name]) { $Object.$Name = $Value }
     else { $Object | Add-Member -NotePropertyName $Name -NotePropertyValue $Value }
+}
+
+function Copy-FileIfChanged([string] $Source, [string] $Destination) {
+    if (Test-Path -LiteralPath $Destination -PathType Leaf) {
+        $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+        $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+        if ($sourceHash -eq $destinationHash) { return }
+    }
+    Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
 function Install-WinGetDependencies {
@@ -197,8 +208,12 @@ Write-Step 'Install bundled native components and configuration'
 if (-not $DryRun) {
     New-Item -ItemType Directory -Path (Join-Path $stateRoot 'bin'), $moduleDestination,
         (Split-Path $profilePath), (Split-Path $yaziKeymap) -Force | Out-Null
-    Copy-Item (Join-Path $repoRoot 'assets\fzf-icons\fzf.exe') (Join-Path $stateRoot 'bin\fzf.exe') -Force
-    Copy-Item (Join-Path $repoRoot 'assets\Fast-TerminalIcons\0.3.0\*') $moduleDestination -Force
+    Copy-FileIfChanged (Join-Path $repoRoot 'assets\fzf-icons\fzf.exe') (Join-Path $stateRoot 'bin\fzf.exe')
+    foreach ($moduleFile in Get-ChildItem (Join-Path $repoRoot 'assets\Fast-TerminalIcons\0.3.0') -File) {
+        Copy-FileIfChanged $moduleFile.FullName (Join-Path $moduleDestination $moduleFile.Name)
+    }
+    Copy-FileIfChanged (Join-Path $repoRoot 'uninstall.ps1') (Join-Path $stateRoot 'uninstall.ps1')
+    Copy-FileIfChanged (Join-Path $repoRoot 'verify.ps1') (Join-Path $stateRoot 'verify.ps1')
     Copy-Item (Join-Path $repoRoot 'config\powershell\profile.ps1') $profilePath -Force
     Copy-Item (Join-Path $repoRoot 'config\yazi\keymap.toml') $yaziKeymap -Force
     if (-not $SkipTerminalSettings) { Merge-WindowsTerminalSettings }
@@ -215,5 +230,5 @@ Write-Step 'Complete'
 if ($DryRun) { Write-Host 'Dry run only; no files or packages were changed.' -ForegroundColor Yellow }
 else {
     Write-Host "Backup: $backupRoot"
-    Write-Host 'Close all Windows Terminal windows, reopen Terminal, then run: .\verify.ps1'
+    Write-Host 'Close all Windows Terminal windows, reopen Terminal, then run: Test-TerminalKit'
 }

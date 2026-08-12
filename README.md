@@ -31,7 +31,16 @@ Zsh/Nushell 的视觉与交互，但不引入 Zsh、Nushell、WSL 或 Git Bash �
 要求：Windows 10/11、WinGet，以及能够联网访问 WinGet、PSGallery 和 GitHub。
 不需要管理员 PowerShell；字体按当前用户安装。
 
-下载或克隆本仓库，在仓库根目录执行：
+打开 PowerShell，粘贴这一行即可；**不需要 Git，不需要下载或克隆仓库**：
+
+```powershell
+irm https://raw.githubusercontent.com/meglinge/PowerShell-Terminal-Kit/main/bootstrap.ps1 | iex
+```
+
+该命令通过 HTTPS 获取公开的 `bootstrap.ps1`，自动下载最新版仓库压缩包到系统临时
+目录，执行安装后立即清理压缩包和源码。建议先打开链接审阅脚本，再执行远程代码。
+
+如果已经手动下载了仓库，也可以离线从仓库根目录执行：
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
@@ -49,7 +58,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 安装完成后关闭**所有** Windows Terminal 窗口，重新打开，再验证：
 
 ```powershell
-pwsh -NoProfile -File .\verify.ps1
+Test-TerminalKit
 ```
 
 ### 安装选项
@@ -70,18 +79,36 @@ pwsh -NoProfile -File .\verify.ps1
 
 脚本可重复执行；每次执行都会创建新的时间戳备份。
 
-## 回滚与卸载
+## 一键更新
 
-恢复最近一次安装前的配置：
+重复运行同一条安装命令就会自动获取并覆盖为 GitHub `main` 的最新配置：
 
 ```powershell
-pwsh -NoProfile -File .\uninstall.ps1
+irm https://raw.githubusercontent.com/meglinge/PowerShell-Terminal-Kit/main/bootstrap.ps1 | iex
+```
+
+安装后还会提供更短的更新命令：
+
+```powershell
+Update-TerminalKit
+```
+
+更新同样会先创建新备份；哈希未变化且正在使用的 DLL 会跳过复制，因此重复执行不会
+因 Windows 锁定已加载模块而失败。更新后重新打开 Windows Terminal。
+
+## 回滚与卸载
+
+恢复第一次安装本套件之前的原始配置：
+
+```powershell
+Uninstall-TerminalKit
 ```
 
 指定某次备份：
 
 ```powershell
-.\uninstall.ps1 -Backup "$env:LOCALAPPDATA\PowerShellTerminalKit\backups\20260812-120000"
+& "$env:LOCALAPPDATA\PowerShellTerminalKit\uninstall.ps1" `
+    -Backup "$env:LOCALAPPDATA\PowerShellTerminalKit\backups\20260812-120000-000"
 ```
 
 卸载器会恢复配置并移除本套件的 fzf 和 Fast-TerminalIcons 运行时。WinGet 应用、
@@ -103,6 +130,9 @@ PSGallery 模块与字体可能被其他配置共享，因此有意保留，不�
 | `Shift+S`（Yazi） | 进入光标所指目录、退出 Yazi、切换 PowerShell 目录 |
 | `reload-profile` | 重载 PowerShell Profile |
 | `edit-profile` | 用 VS Code 编辑 Profile |
+| `Update-TerminalKit` | 自动下载并更新到最新版 |
+| `Test-TerminalKit` | 验证已安装环境 |
+| `Uninstall-TerminalKit` | 恢复首次安装前的原始配置 |
 
 完整键位见 [docs/KEYS.md](docs/KEYS.md)。
 

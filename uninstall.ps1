@@ -11,11 +11,11 @@ $ErrorActionPreference = 'Stop'
 if (-not $IsWindows) { throw 'PowerShell Terminal Kit supports Windows only.' }
 
 if (-not $Backup) {
-    $latest = Get-ChildItem (Join-Path $stateRoot 'backups') -Directory -ErrorAction SilentlyContinue |
-        Sort-Object Name -Descending | Where-Object { Test-Path (Join-Path $_.FullName 'manifest.json') } |
+    $original = Get-ChildItem (Join-Path $stateRoot 'backups') -Directory -ErrorAction SilentlyContinue |
+        Sort-Object Name | Where-Object { Test-Path (Join-Path $_.FullName 'manifest.json') } |
         Select-Object -First 1
-    if (-not $latest) { throw 'No installation backup manifest was found.' }
-    $Backup = $latest.FullName
+    if (-not $original) { throw 'No installation backup manifest was found.' }
+    $Backup = $original.FullName
 }
 
 $manifestPath = if (Test-Path $Backup -PathType Container) { Join-Path $Backup 'manifest.json' } else { $Backup }

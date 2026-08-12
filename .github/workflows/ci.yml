@@ -19,3 +19,8 @@ jobs:
       - name: Installer dry run
         shell: pwsh
         run: ./install.ps1 -SkipPackages -SkipFont -SkipTerminalSettings -DryRun
+      - name: Network bootstrap
+        shell: pwsh
+        env:
+          PSTK_BOOTSTRAP_TEST: '1'
+        run: Invoke-Expression (Get-Content ./bootstrap.ps1 -Raw)

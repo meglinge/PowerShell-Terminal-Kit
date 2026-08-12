@@ -204,6 +204,12 @@ function ports { Get-NetTCPConnection -State Listen | Sort-Object LocalPort | Fo
 function path { $env:Path -split ';' | Where-Object { $_ } }
 function reload-profile { . $PROFILE.CurrentUserAllHosts }
 function edit-profile { code $PROFILE.CurrentUserAllHosts }
+function Update-TerminalKit {
+    $bootstrap = Invoke-RestMethod 'https://raw.githubusercontent.com/meglinge/PowerShell-Terminal-Kit/main/bootstrap.ps1'
+    Invoke-Expression $bootstrap
+}
+function Test-TerminalKit { & (Join-Path $terminalKitRoot 'verify.ps1') -InstalledOnly }
+function Uninstall-TerminalKit { & (Join-Path $terminalKitRoot 'uninstall.ps1') }
 
 if (Get-Command winget -ErrorAction SilentlyContinue) {
     Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {

@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([switch] $RepositoryOnly)
+param(
+    [switch] $RepositoryOnly,
+    [switch] $InstalledOnly
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -24,7 +27,9 @@ function Test-PowerShellSyntax([string] $Path) {
 }
 
 $repoRoot = $PSScriptRoot
+if (-not $InstalledOnly) {
 Test-Check 'PowerShell profile syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'config\powershell\profile.ps1') }
+Test-Check 'Network bootstrap syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'bootstrap.ps1') }
 Test-Check 'Installer syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'install.ps1') }
 Test-Check 'Uninstaller syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'uninstall.ps1') }
 Test-Check 'Verifier syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'verify.ps1') }
@@ -67,14 +72,19 @@ Test-Check 'Installer deploys and merges in an isolated target' {
         & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
             -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
             -YaziKeymap $targetYazi -TerminalSettings $targetTerminal | Out-Null
+        $firstBackup = Get-ChildItem (Join-Path $temp 'state\backups') -Directory | Sort-Object Name | Select-Object -First 1
         $settings = Get-Content $targetTerminal -Raw | ConvertFrom-Json
         if (-not (Test-Path $targetProfile) -or -not (Test-Path $targetYazi)) { throw 'configuration files were not deployed' }
         if (-not (Test-Path (Join-Path $temp 'state\bin\fzf.exe'))) { throw 'fzf-icons was not deployed' }
         if ('{keep-me}' -notin $settings.profiles.list.guid) { throw 'existing Terminal profile was lost' }
         if ('Existing Scheme' -notin $settings.schemes.name) { throw 'existing Terminal scheme was lost' }
         if ($settings.profiles.defaults.colorScheme -ne 'Tokyo Night') { throw 'Terminal defaults were not merged' }
+        Import-Module (Join-Path (Split-Path $targetProfile) 'Modules\Fast-TerminalIcons\0.3.0\Fast-TerminalIcons.dll') -Force
+        & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
+            -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
+            -YaziKeymap $targetYazi -TerminalSettings $targetTerminal | Out-Null
         & (Join-Path $repoRoot 'uninstall.ps1') -StateRoot (Join-Path $temp 'state') `
-            -ProfilePath $targetProfile | Out-Null
+            -ProfilePath $targetProfile -Backup $firstBackup.FullName | Out-Null
         $restored = Get-Content $targetTerminal -Raw | ConvertFrom-Json
         if (Test-Path $targetProfile) { throw 'new profile was not removed during rollback' }
         if (Test-Path $targetYazi) { throw 'new Yazi keymap was not removed during rollback' }
@@ -84,6 +94,7 @@ Test-Check 'Installer deploys and merges in an isolated target' {
     } finally {
         Remove-Item $temp -Recurse -Force -ErrorAction SilentlyContinue
     }
+}
 }
 
 if (-not $RepositoryOnly) {
