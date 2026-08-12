@@ -25,7 +25,14 @@ New-Item -ItemType Directory -Path $safetyBackup -Force | Out-Null
 
 foreach ($entry in $manifest.entries) {
     if (Test-Path -LiteralPath $entry.path) {
-        $name = [Convert]::ToHexString([Text.Encoding]::UTF8.GetBytes([string]$entry.path)) + '.current'
+        $sha256 = [Security.Cryptography.SHA256]::Create()
+        try {
+            $name = [BitConverter]::ToString(
+                $sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes([string]$entry.path))
+            ).Replace('-', '') + '.current'
+        } finally {
+            $sha256.Dispose()
+        }
         Copy-Item -LiteralPath $entry.path -Destination (Join-Path $safetyBackup $name) -Recurse -Force
         Remove-Item -LiteralPath $entry.path -Recurse -Force
     }
