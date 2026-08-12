@@ -27,6 +27,12 @@ map('n', '<leader>gg', function()
   vim.cmd.startinsert()
 end, { desc = 'LazyGit' })
 
+map('n', '<leader>aa', function()
+  vim.cmd('botright split | terminal amp')
+  vim.cmd.startinsert()
+end, { desc = 'Open Amp' })
+map('n', '<leader>as', '<cmd>AmpStatus<CR>', { desc = 'Amp status' })
+
 map('n', '[d', function() vim.diagnostic.jump({ count = -1, float = true }) end,
   { desc = 'Previous diagnostic' })
 map('n', ']d', function() vim.diagnostic.jump({ count = 1, float = true }) end,

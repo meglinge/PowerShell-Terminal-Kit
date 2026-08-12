@@ -17,6 +17,7 @@ lazy.nvim，也不引入完整 Neovim 发行版。插件锁定在 `nvim-pack-loc
 | `conform.nvim` | 保存时格式化，并在工具缺失时回退到 LSP |
 | `gitsigns.nvim` | Git 修改标记、预览、暂存和回滚 hunk |
 | `tokyonight.nvim` | 与 Windows Terminal 一致的 Tokyo Night Moon 配色 |
+| `ampcode/amp.nvim` | 把当前文件、光标和选区同步给 Amp CLI |
 
 没有安装 `nvim-cmp`、Telescope、Neo-tree、WhichKey、Lualine 或额外图标插件：Neovim
 0.12 原生补全与 `mini.nvim` 已覆盖这些职责。
@@ -64,6 +65,8 @@ Treesitter 新版在 Windows 安装额外 parser 时要求 `tree-sitter-cli >= 0
 | `[c` / `]c` | 上一个/下一个 Git hunk |
 | `Space h p/s/r` | 预览/暂存/还原 Git hunk |
 | `Space g g` | 在分屏终端打开 LazyGit |
+| `Space a a` | 在分屏终端打开 Amp CLI |
+| `Space a s` | 显示 Amp IDE 连接状态 |
 | `gd` / `grr` / `gra` / `grn` | 定义/引用/代码操作/重命名（Neovim 原生 LSP） |
 | `K` | 悬浮文档 |
 | `Ctrl+Space` | 手动触发原生 LSP 补全 |
@@ -76,3 +79,13 @@ Treesitter 新版在 Windows 安装额外 parser 时要求 `tree-sitter-cli >= 0
 - Treesitter 新 parser：tree-sitter CLI 与 C 编译器。
 - TypeScript/JSON/Pyright：Node.js；Go：Go 工具链；Rust：Rustup。
 - 格式器可通过 `:Mason` 或系统包管理器安装，例如 Stylua、Ruff、Prettier。
+
+## Amp IDE 集成
+
+安装并登录 Amp CLI 后，从项目目录执行 `amp`；插件会自动发布当前文件、光标、选区和
+诊断信息。连接没有自动建立时，在 Amp 中按 `Ctrl+O`，选择 `ide connect`。Neovim
+也提供 `:AmpStart`、`:AmpStop`、`:AmpStatus`、`:AmpTest` 和 `:checkhealth amp`。
+
+官方 `ampcode/amp.nvim` 仓库已在 2026-08-03 标记为 deprecated/unmaintained，但 Amp
+当前手册仍把它列为 Neovim 集成方式。本配置因此保持最小接入，不依赖其内部 API；
+没有安装 Amp CLI 时不会自动启动本地连接服务。

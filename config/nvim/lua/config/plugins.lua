@@ -12,6 +12,7 @@ vim.pack.add({
   { src = gh('WhoIsSethDaniel/mason-tool-installer.nvim') },
   { src = gh('stevearc/conform.nvim') },
   { src = gh('lewis6991/gitsigns.nvim') },
+  { src = gh('ampcode/amp.nvim'), version = 'main' },
 }, { confirm = false, load = true })
 
 require('tokyonight').setup({
@@ -26,6 +27,11 @@ require('mini.files').setup({ windows = { preview = true, width_preview = 50 } }
 require('mini.statusline').setup({ use_icons = true })
 require('mini.pairs').setup()
 require('mini.surround').setup()
+
+require('amp').setup({
+  auto_start = vim.fn.executable('amp') == 1,
+  log_level = 'warn',
+})
 
 local clue = require('mini.clue')
 clue.setup({

@@ -1,5 +1,10 @@
 {
   "plugins": {
+    "amp.nvim": {
+      "rev": "01ede44322220da5dc0b73ad8ace328a5ec1f5bf",
+      "src": "https://github.com/ampcode/amp.nvim",
+      "version": "'main'"
+    },
     "conform.nvim": {
       "rev": "016802de402556da54c36bd7359b441266b01cdd",
       "src": "https://github.com/stevearc/conform.nvim"
