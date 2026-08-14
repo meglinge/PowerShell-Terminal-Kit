@@ -27,6 +27,9 @@ mux-ls
 而不是同时按三个键。`C-方向键` 表示第二步按 `Ctrl+方向键`，`M-方向键` 表示
 `Alt+方向键`。按 `Ctrl+A` 两次可将原始 `Ctrl+A` 发送给 PowerShell、Neovim 或 Amp。
 
+最高频操作不需要 Prefix：直接按 `Alt+方向键` 切换 Pane，增加 `Shift` 后调整大小。
+Windows Terminal 已释放这些按键，由 psmux 统一管理空间导航。
+
 ### Session
 
 | 按键或命令 | 用途 |
@@ -35,7 +38,9 @@ mux-ls
 | `Prefix s` | 打开 Session 选择器；方向键选择，`Enter` 切换 |
 | `Prefix (` / `Prefix )` | 切换到上一个 / 下一个 Session |
 | `Prefix $` | 重命名当前 Session |
-| `Prefix :`，输入 `new-session -s 名称` | 新建并切换到 Session |
+| `Prefix S` | 输入名称，新建并切换到 Session |
+| `Prefix :`，输入 `new-session -s 名称` | 通过命令提示符新建 Session |
+| `Prefix X s`，再按 `y` | 安全关闭当前 Session |
 | `mux 名称` | 从 PowerShell 创建或进入指定 Session |
 | `mux-ls` | 从 PowerShell 列出全部 Session |
 
@@ -52,21 +57,25 @@ Window 是 Session 内的完整工作区，每个 Window 可以包含多个 Pane
 | `Prefix '` | 输入编号后切换 Window |
 | `Prefix w` | 打开 Window 选择器 |
 | `Prefix ,` | 重命名当前 Window |
-| `Prefix &` | 关闭当前 Window，按 `y` 确认 |
+| `Prefix X w`，再按 `y` | 使用统一关闭入口安全关闭当前 Window |
+| `Prefix &` | 迁移期保留的旧关闭方式，按 `y` 确认 |
 
 ### Pane（分屏）
 
 | 按键 | 用途 |
 |---|---|
-| `Prefix \|` | 左右分屏，并继承当前 Pane 的目录 |
-| `Prefix -` | 上下分屏，并继承当前 Pane 的目录 |
-| `Prefix %` / `Prefix "` | psmux 默认左右 / 上下分屏，不保证继承目录 |
-| `Prefix h/j/k/l` | 移动到左 / 下 / 上 / 右 Pane，可按住第二个键连续移动 |
-| `Prefix ←/↓/↑/→` | 使用方向键移动到相邻 Pane |
+| `Alt+←/↓/↑/→` | **直接**移动到左 / 下 / 上 / 右 Pane，无需 Prefix |
+| `Prefix v` | 左右分屏，并继承当前 Pane 的目录 |
+| `Prefix b` | 上下分屏，并继承当前 Pane 的目录 |
+| `Prefix \|` / `Prefix -` | 迁移期保留的旧分屏键，同样继承当前目录 |
+| `Prefix %` / `Prefix "` | psmux 兼容分屏键，同样继承当前目录 |
+| `Prefix h/j/k/l` | 迁移期保留的左 / 下 / 上 / 右导航 |
+| `Prefix ←/↓/↑/→` | 永久保留的方向键导航后备方案 |
 | `Prefix o` | 按顺序移动到下一个 Pane |
 | `Prefix ;` | 返回刚才使用的 Pane |
 | `Prefix q` | 显示 Pane 编号，再按编号跳转 |
-| `Prefix x` | 关闭当前 Pane，按 `y` 确认；最后一个 Pane 关闭时 Session 结束 |
+| `Prefix X p`，再按 `y` | 使用统一关闭入口安全关闭当前 Pane |
+| `Prefix x` | 迁移期保留的旧关闭方式，按 `y` 确认 |
 | `exit` | 从当前 Shell 退出并关闭所在 Pane |
 | `Prefix z` | 最大化当前 Pane / 恢复原布局 |
 | `Prefix {` / `Prefix }` | 与上一个 / 下一个 Pane 交换位置 |
@@ -76,7 +85,8 @@ Window 是 Session 内的完整工作区，每个 Window 可以包含多个 Pane
 
 | 按键 | 用途 |
 |---|---|
-| `Prefix H/J/K/L` | 分别向左 / 下 / 上 / 右调整，横向 3 格、纵向 2 格 |
+| `Alt+Shift+←/↓/↑/→` | **直接**向对应方向调整，横向 3 格、纵向 2 格 |
+| `Prefix H/J/K/L` | 迁移期保留的左 / 下 / 上 / 右调整方式 |
 | `Prefix C-方向键` | 向对应方向微调 1 格 |
 | `Prefix M-方向键` | 向对应方向快速调整 5 格 |
 | `Prefix Space` | 循环切换预设布局 |
@@ -90,8 +100,9 @@ Window 是 Session 内的完整工作区，每个 Window 可以包含多个 Pane
 
 | 按键 | 用途 |
 |---|---|
-| `PageUp` | 无需 Prefix，向上翻页并进入复制模式 |
 | `Prefix [` | 进入 vi 复制模式 |
+| `Prefix PageUp` | 进入复制模式并向上翻页 |
+| `PageUp` | 原样交给 Neovim、Yazi、fzf 或当前前台程序 |
 | `Space` | 在复制模式中开始选择 |
 | `v` | 在复制模式中切换矩形选择 |
 | `y` | 复制所选内容并退出复制模式 |
@@ -99,8 +110,6 @@ Window 是 Session 内的完整工作区，每个 Window 可以包含多个 Pane
 | `Prefix ]` | 粘贴最近的 psmux buffer |
 | `Prefix =` | 选择一个 buffer 后粘贴 |
 | `Prefix #` | 列出所有 buffer |
-| `Prefix v` | 切换矩形选择 |
-| `Prefix y` | 复制当前选择 |
 
 复制模式使用 vi 导航：`h/j/k/l` 移动，`Ctrl+U` / `Ctrl+D` 上下半页，`g` / `G`
 前往开头 / 结尾。启用鼠标后，也可以滚轮回看、点击切换 Pane、拖动边界调整大小。
@@ -116,13 +125,15 @@ Window 是 Session 内的完整工作区，每个 Window 可以包含多个 Pane
 | `Prefix r` | 重新加载 `~/.psmux.conf` |
 | `Prefix Prefix` | 向前台程序发送原始 `Ctrl+A` |
 
-没有设置无前缀的 Alt/Ctrl 导航，因此不会抢占 Neovim、Amp、fzf、Yazi 或 PSReadLine
-按键。遇到文档与安装版本不一致时，以 `Prefix ?` 或 `psmux list-keys` 的输出为准。
+只接管 Windows Terminal 原本已占用的 `Alt+方向键` 和 `Alt+Shift+方向键`；没有占用
+应用常见的 Alt 字母或 Ctrl 组合键，因此不会新增 Neovim、Amp、fzf、Yazi 或 PSReadLine
+冲突。遇到文档与安装版本不一致时，以 `Prefix ?` 或 `psmux list-keys` 的输出为准。
 
 ## Neovim、Amp 与剪贴板
 
 - `Ctrl+V` 会原样传给 Neovim，用于 Visual Block。
 - Windows Terminal 粘贴改为 `Ctrl+Shift+V`，右键粘贴仍可用。
+- Windows Terminal 的 Alt 方向键已释放给 psmux；外层 Terminal Pane 请使用鼠标管理。
 - Amp 多行输入使用 `Ctrl+J`；psmux 不绑定它。
 - 若 Windows Terminal 能发送修改后的 Enter，`Shift+Enter` 会透传给 Amp。
 - `mux-dev` 在同一项目目录启动 Neovim 和 Amp，`amp.nvim` 能自动匹配 workspace。

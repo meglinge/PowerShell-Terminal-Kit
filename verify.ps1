@@ -34,7 +34,29 @@ Test-Check 'Installer syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'inst
 Test-Check 'Uninstaller syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'uninstall.ps1') }
 Test-Check 'Verifier syntax' { Test-PowerShellSyntax (Join-Path $repoRoot 'verify.ps1') }
 Test-Check 'Windows Terminal fragment JSON' {
-    $null = Get-Content (Join-Path $repoRoot 'config\windows-terminal.fragment.json') -Raw | ConvertFrom-Json
+    $fragment = Get-Content (Join-Path $repoRoot 'config\windows-terminal.fragment.json') -Raw | ConvertFrom-Json
+    $expected = @(
+        'alt+left', 'alt+down', 'alt+up', 'alt+right',
+        'alt+shift+left', 'alt+shift+down', 'alt+shift+up', 'alt+shift+right'
+    )
+    $unbound = @($fragment.keybindings | Where-Object id -eq 'unbound').keys
+    if ($expected | Where-Object { $_ -notin $unbound }) {
+        throw 'Windows Terminal does not release all psmux navigation keys'
+    }
+}
+Test-Check 'psmux ergonomic bindings' {
+    $config = Get-Content (Join-Path $repoRoot 'config\psmux\psmux.conf') -Raw
+    @(
+        'unbind-key -T root PPage',
+        'bind-key -n M-Left select-pane -L',
+        'bind-key -n M-S-Right resize-pane -R 3',
+        'bind-key v split-window -h',
+        'bind-key b split-window -v',
+        'bind-key S command-prompt',
+        'bind-key -T close s confirm-before'
+    ) | ForEach-Object {
+        if (-not $config.Contains($_)) { throw "missing psmux binding: $_" }
+    }
 }
 Test-Check 'No machine-specific paths or common token prefixes' {
     $text = Get-ChildItem $repoRoot -Recurse -File |
@@ -133,6 +155,11 @@ if (-not $RepositoryOnly) {
         if (-not (Test-Path $config) -or $version -notmatch '(?m)^psmux 3\.') {
             throw 'psmux configuration or binary is unavailable'
         }
+        $text = Get-Content $config -Raw
+        if (-not $text.Contains('bind-key -n M-Left select-pane -L') -or
+            -not $text.Contains('unbind-key -T root PPage')) {
+            throw 'installed psmux ergonomic bindings are missing'
+        }
     }
     Test-Check 'Yazi keymap is loaded' {
         $debug = & yazi --debug 2>&1 | Out-String
@@ -141,9 +168,15 @@ if (-not $RepositoryOnly) {
     Test-Check 'Windows Terminal uses Tokyo Night and PowerShell' {
         $path = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
         $settings = Get-Content $path -Raw | ConvertFrom-Json
+        $expected = @(
+            'alt+left', 'alt+down', 'alt+up', 'alt+right',
+            'alt+shift+left', 'alt+shift+down', 'alt+shift+up', 'alt+shift+right'
+        )
+        $unbound = @($settings.keybindings | Where-Object id -eq 'unbound').keys
         $settings.defaultProfile -eq '{574e775e-4f2a-5b96-ac1e-a2962a402336}' -and
             $settings.profiles.defaults.colorScheme -eq 'Tokyo Night' -and
-            $settings.profiles.defaults.font.face -eq 'Maple Mono NF CN'
+            $settings.profiles.defaults.font.face -eq 'Maple Mono NF CN' -and
+            -not ($expected | Where-Object { $_ -notin $unbound })
     }
 }
 

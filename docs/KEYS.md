@@ -26,8 +26,9 @@
 
 ## psmux
 
-前缀为 `Ctrl+A`：`|` / `-` 左右/上下分割，`h/j/k/l` 移动 pane，
-`H/J/K/L` 调整大小，`c` 新建 Window，`d` detach，`[` 进入 vi copy mode。
+直接按 `Alt+方向键` 移动 Pane，`Alt+Shift+方向键` 调整大小。前缀为 `Ctrl+A`：
+`v` / `b` 左右/上下分割，`S` 新建 Session，`s` 选择 Session，`c` 新建 Window，
+`X p/w/s` 安全关闭 Pane/Window/Session，`d` detach，`[` 进入 vi copy mode。
 完整表格见 [PSMUX.md](PSMUX.md)。
 
 ## Yazi（Ranger 风格）
