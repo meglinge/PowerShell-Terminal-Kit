@@ -206,6 +206,33 @@ function reload-profile { . $PROFILE.CurrentUserAllHosts }
 function edit-profile { code $PROFILE.CurrentUserAllHosts }
 if (Get-Command nvim -ErrorAction SilentlyContinue) { Set-Alias vim nvim }
 function edit-nvim { nvim (Join-Path $env:LOCALAPPDATA 'nvim') }
+function mux([string]$Name = 'main') {
+    if ($env:TMUX) { Write-Host 'Already inside a psmux session.' -ForegroundColor Yellow; return }
+    psmux new-session -A -s $Name -c (Get-Location).Path
+}
+function mux-dev([string]$Name = 'dev') {
+    if ($env:TMUX) { Write-Host 'Already inside a psmux session.' -ForegroundColor Yellow; return }
+    psmux has-session -t $Name 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $cwd = (Get-Location).Path
+        psmux new-session -d -s $Name -n code -c $cwd
+        if ($LASTEXITCODE -ne 0) { throw "Unable to create psmux session '$Name'." }
+        Start-Sleep -Milliseconds 1500
+        $editor = "${Name}:1.1"
+        psmux send-keys -t $editor -l 'nvim .'
+        psmux send-keys -t $editor Enter
+        $ampPane = (psmux split-window -d -h -p 35 -P -F '#{pane_id}' `
+            -t $editor -c '#{pane_current_path}').Trim()
+        Start-Sleep -Milliseconds 1500
+        psmux select-pane -t $ampPane -T Amp
+        psmux send-keys -t $ampPane -l 'amp'
+        psmux send-keys -t $ampPane Enter
+    }
+    psmux attach -t $Name
+}
+function mux-ls { psmux list-sessions }
+function mux-reload { psmux source-file (Join-Path $HOME '.psmux.conf') }
+function edit-psmux { nvim (Join-Path $HOME '.psmux.conf') }
 function Update-TerminalKit {
     $bootstrap = Invoke-RestMethod 'https://raw.githubusercontent.com/meglinge/PowerShell-Terminal-Kit/main/bootstrap.ps1'
     Invoke-Expression $bootstrap

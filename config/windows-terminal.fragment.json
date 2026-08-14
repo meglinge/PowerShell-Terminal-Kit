@@ -13,7 +13,7 @@
   "keybindings": [
     { "id": "Terminal.SplitPaneDown", "keys": "alt+shift+minus" },
     { "id": "Terminal.CopyToClipboard", "keys": "ctrl+c" },
-    { "id": "Terminal.PasteFromClipboard", "keys": "ctrl+v" },
+    { "id": "Terminal.PasteFromClipboard", "keys": "ctrl+shift+v" },
     { "id": "Terminal.FindText", "keys": "ctrl+shift+f" },
     { "id": "Terminal.ToggleCommandPalette", "keys": "ctrl+shift+p" },
     { "id": "Terminal.DuplicatePaneAuto", "keys": "alt+shift+d" },

@@ -16,13 +16,19 @@
 
 | 按键 | 功能 |
 |---|---|
-| `Ctrl+C` / `Ctrl+V` | 复制 / 粘贴 |
+| `Ctrl+C` / `Ctrl+Shift+V` | 复制 / 粘贴；保留 Ctrl+V 给 Neovim Visual Block |
 | `Ctrl+Shift+F` | 搜索终端内容 |
 | `Ctrl+Shift+P` | 命令面板 |
 | `F11` | 专注模式 |
 | `Alt+Shift+D` | 自动拆分窗格 |
 | `Alt+Shift++` | 向右拆分 |
 | `Alt+Shift+-` | 向下拆分 |
+
+## psmux
+
+前缀为 `Ctrl+A`：`|` / `-` 左右/上下分割，`h/j/k/l` 移动 pane，
+`H/J/K/L` 调整大小，`c` 新建 Window，`d` detach，`[` 进入 vi copy mode。
+完整表格见 [PSMUX.md](PSMUX.md)。
 
 ## Yazi（Ranger 风格）
 

@@ -66,20 +66,24 @@ Test-Check 'Installer deploys and merges in an isolated target' {
         $targetProfile = Join-Path $temp 'PowerShell\profile.ps1'
         $targetYazi = Join-Path $temp 'yazi\keymap.toml'
         $targetNeovim = Join-Path $temp 'nvim'
+        $targetPsmux = Join-Path $temp '.psmux.conf'
         $targetTerminal = Join-Path $temp 'Terminal\settings.json'
         New-Item -ItemType Directory -Path (Split-Path $targetTerminal) -Force | Out-Null
         New-Item -ItemType Directory -Path $targetNeovim -Force | Out-Null
         'existing-neovim-config' | Set-Content (Join-Path $targetNeovim 'original.txt') -Encoding utf8NoBOM
+        'existing-psmux-config' | Set-Content $targetPsmux -Encoding utf8NoBOM
         '{"profiles":{"defaults":{},"list":[{"guid":"{keep-me}","name":"Existing"}]},"schemes":[{"name":"Existing Scheme"}]}' |
             Set-Content $targetTerminal -Encoding utf8NoBOM
         & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
             -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
             -YaziKeymap $targetYazi -NeovimConfig $targetNeovim `
+            -PsmuxConfig $targetPsmux `
             -TerminalSettings $targetTerminal | Out-Null
         $firstBackup = Get-ChildItem (Join-Path $temp 'state\backups') -Directory | Sort-Object Name | Select-Object -First 1
         $settings = Get-Content $targetTerminal -Raw | ConvertFrom-Json
         if (-not (Test-Path $targetProfile) -or -not (Test-Path $targetYazi)) { throw 'configuration files were not deployed' }
         if (-not (Test-Path (Join-Path $targetNeovim 'init.lua'))) { throw 'Neovim configuration was not deployed' }
+        if ((Get-Content $targetPsmux -Raw) -notmatch 'default-shell pwsh.exe') { throw 'psmux configuration was not deployed' }
         if (-not (Test-Path (Join-Path $temp 'state\bin\fzf.exe'))) { throw 'fzf-icons was not deployed' }
         if ('{keep-me}' -notin $settings.profiles.list.guid) { throw 'existing Terminal profile was lost' }
         if ('Existing Scheme' -notin $settings.schemes.name) { throw 'existing Terminal scheme was lost' }
@@ -88,6 +92,7 @@ Test-Check 'Installer deploys and merges in an isolated target' {
         & (Join-Path $repoRoot 'install.ps1') -SkipPackages -SkipFont `
             -StateRoot (Join-Path $temp 'state') -ProfilePath $targetProfile `
             -YaziKeymap $targetYazi -NeovimConfig $targetNeovim `
+            -PsmuxConfig $targetPsmux `
             -TerminalSettings $targetTerminal | Out-Null
         & (Join-Path $repoRoot 'uninstall.ps1') -StateRoot (Join-Path $temp 'state') `
             -ProfilePath $targetProfile -Backup $firstBackup.FullName | Out-Null
@@ -96,6 +101,7 @@ Test-Check 'Installer deploys and merges in an isolated target' {
         if (Test-Path $targetYazi) { throw 'new Yazi keymap was not removed during rollback' }
         if (-not (Test-Path (Join-Path $targetNeovim 'original.txt'))) { throw 'original Neovim config was not restored' }
         if (Test-Path (Join-Path $targetNeovim 'init.lua')) { throw 'installed Neovim config remained after rollback' }
+        if ((Get-Content $targetPsmux -Raw).Trim() -ne 'existing-psmux-config') { throw 'original psmux config was not restored' }
         if ($restored.profiles.list.Count -ne 1 -or $restored.profiles.list[0].guid -ne '{keep-me}') {
             throw 'Terminal settings were not restored exactly enough'
         }
@@ -110,8 +116,8 @@ if (-not $RepositoryOnly) {
     Test-Check 'Installed profile exists and parses' { Test-PowerShellSyntax $profilePath }
     Test-Check 'Fresh PowerShell loads profile commands' {
         $output = & pwsh -NoLogo -NonInteractive -Command `
-            "Get-Command ls, lso, ya, j, Format-FastTerminalTable | Select-Object -ExpandProperty Name"
-        @('ls', 'lso', 'ya', 'j', 'Format-FastTerminalTable') |
+            "Get-Command ls, lso, ya, j, mux, mux-dev, Format-FastTerminalTable | Select-Object -ExpandProperty Name"
+        @('ls', 'lso', 'ya', 'j', 'mux', 'mux-dev', 'Format-FastTerminalTable') |
             Where-Object { $_ -notin $output } | ForEach-Object { throw "missing command $_" }
     }
     Test-Check 'Installed fzf is the icon build' {
@@ -120,6 +126,13 @@ if (-not $RepositoryOnly) {
     Test-Check 'Neovim configuration loads' {
         $output = & nvim --headless "+lua print('terminal-kit-nvim-ok')" '+qall' 2>&1 | Out-String
         if ($LASTEXITCODE -ne 0 -or $output -notmatch 'terminal-kit-nvim-ok') { throw $output }
+    }
+    Test-Check 'psmux configuration and binary' {
+        $config = Join-Path $HOME '.psmux.conf'
+        $version = (& psmux --version) -join "`n"
+        if (-not (Test-Path $config) -or $version -notmatch '(?m)^psmux 3\.') {
+            throw 'psmux configuration or binary is unavailable'
+        }
     }
     Test-Check 'Yazi keymap is loaded' {
         $debug = & yazi --debug 2>&1 | Out-String
