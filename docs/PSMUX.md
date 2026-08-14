@@ -1,7 +1,8 @@
 # psmux：原生 Windows 终端复用器
 
 psmux 直接使用 Windows ConPTY，不需要 WSL、Cygwin、Git Bash 或其他 Shell。所有 pane
-继续运行 PowerShell 7。配置文件是 `~/.psmux.conf`，语法兼容 tmux。
+继续运行 PowerShell 7。配置文件是 `~/.psmux.conf`，语法兼容 tmux。请使用 `mux` 或
+`mux-dev` 启动；它们会在连接和创建 server 时显式加载配置，避免 psmux 重启后回到默认键位。
 
 ## 开始使用
 

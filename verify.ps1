@@ -57,6 +57,10 @@ Test-Check 'psmux ergonomic bindings' {
     ) | ForEach-Object {
         if (-not $config.Contains($_)) { throw "missing psmux binding: $_" }
     }
+    $profile = Get-Content (Join-Path $repoRoot 'config\powershell\profile.ps1') -Raw
+    if (-not $profile.Contains("psmux -f `$config new-session")) {
+        throw 'mux entry points do not explicitly load the psmux configuration'
+    }
 }
 Test-Check 'No machine-specific paths or common token prefixes' {
     $text = Get-ChildItem $repoRoot -Recurse -File |
