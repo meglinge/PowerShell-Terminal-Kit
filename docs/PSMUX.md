@@ -36,7 +36,7 @@ Windows Terminal 已释放这些按键，由 psmux 统一管理空间导航。
 | 按键或命令 | 用途 |
 |---|---|
 | `Prefix d` | Detach：离开但保留当前 Session 和其中的程序 |
-| `Prefix s` | 打开 Session 选择器；方向键选择，`Enter` 切换 |
+| `Prefix s` | 打开 Session/Window/Pane 树；方向键选择，`Enter` 切换，`q` 退出 |
 | `Prefix (` / `Prefix )` | 切换到上一个 / 下一个 Session |
 | `Prefix $` | 重命名当前 Session |
 | `Prefix S` | 输入名称，新建并切换到 Session |

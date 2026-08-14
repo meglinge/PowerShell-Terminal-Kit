@@ -52,6 +52,7 @@ Test-Check 'psmux ergonomic bindings' {
         'bind-key -n M-S-Right resize-pane -R 3',
         'bind-key v split-window -h',
         'bind-key b split-window -v',
+        'bind-key s choose-tree',
         'bind-key S command-prompt',
         'bind-key -T close s confirm-before'
     ) | ForEach-Object {
@@ -161,7 +162,8 @@ if (-not $RepositoryOnly) {
         }
         $text = Get-Content $config -Raw
         if (-not $text.Contains('bind-key -n M-Left select-pane -L') -or
-            -not $text.Contains('unbind-key -T root PPage')) {
+            -not $text.Contains('unbind-key -T root PPage') -or
+            -not $text.Contains('bind-key s choose-tree')) {
             throw 'installed psmux ergonomic bindings are missing'
         }
     }
